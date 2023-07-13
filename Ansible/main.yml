@@ -1,0 +1,77 @@
+---
+- name: create security group
+  hosts: localhost
+  tasks:
+    - name: create security group
+      amazon.aws.ec2_security_group:
+        name: ansible_security
+        description: My security group description
+        region: eu-central-1
+        rules:
+         - proto: tcp
+           from_port: 80
+           to_port: 80
+           cidr_ip: 0.0.0.0/0
+         - proto: tcp
+           from_port: 22
+           to_port: 22
+           cidr_ip: 0.0.0.0/0
+
+        rules_egress:
+         - proto: tcp
+           from_port: 80
+           to_port: 80
+           cidr_ip: 0.0.0.0/0
+
+    - name: "creating launchconfig"
+      community.aws.autoscaling_launch_config:
+        name: ansible_launchconfig
+        image_id: ami-04e601abe3e1a910f
+        key_name: for_ansible
+        region: eu-central-1
+        security_groups: "ansible_security"
+        instance_type: t2.micro
+        assign_public_ip: true
+        user_data: |
+          #!/bin/bash
+
+          apt update
+          apt install apache2 -y
+          systemctl start apache2
+          systemctl enable apache2
+
+    - name: Create ELB
+      amazon.aws.elb_classic_lb:
+        name: ansible-elb
+        state: present
+        region: eu-central-1
+        zones: [ 'eu-central-1a', 'eu-central-1b' ]
+        security_group_ids: "sg-002cbcc05ad99f07c"
+        health_check:
+          ping_protocol: tcp
+          ping_port: 80
+          response_timeout: 30
+          interval: 60
+          healthy_threshold: 5
+          unhealthy_threshold: 2
+
+        listeners:
+          - protocol: HTTP
+            load_balancer_port: 80
+            instance_port: 80
+
+
+    - name: create auto scaling group
+      amazon.aws.autoscaling_group:
+        name: ansible_asg
+        load_balancers: [ ansible-elb ]
+        region: eu-central-1
+        availability_zones: [ 'eu-central-1a', 'eu-central-1b' ]
+        launch_config_name: 'ansible_launchconfig'
+        min_size: 1
+        max_size: 4
+        desired_capacity: 2
+        tags:
+          - key: environment
+            value: production
+            propagate_at_launch: false
