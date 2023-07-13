@@ -1,3 +1,16 @@
+# Green Blue Deployment
+
+- Created Security Group
+- Created Launch Configuration for AutoScaling Group
+- Created Elastic Load Balancer
+- Created AutoScaling Group
+- Connected AutoScaling Group with Elastic Load Balancer
+
+
+![Alt text](architecture.jpg)
+
+# Configuration Block
+
 Data Block
   defined a data source called aws_ami which retrieves the most recent Ubuntu AMI that matches the specified filters.
 
