@@ -1,4 +1,4 @@
-Stop the instances:-
+
 import boto3
 region = 'eu-central-1'
 instances = ['i-12345cb6de4f78g9h', 'i-08ce9b2d7eccf6d26']
